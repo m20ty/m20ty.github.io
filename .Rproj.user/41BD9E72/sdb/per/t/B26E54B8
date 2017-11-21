@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"Route Map\"\nauthor: \"Michael Tyler\"\ndate: \"3 November 2017\"\noutput: html_document\n---\n\n```{r setup, include=FALSE}\nknitr::opts_chunk$set(echo = FALSE)\n```\n\n## Dartmoor Circular Walk\n\nThis is a map of a circular walk in Dartmoor National Park, UK.  It starts and ends in the village of Postbridge, and takes the hiker across open moorland, taking in some interesting features and peaks.\n\nClick on the markers for the name of each point along the route, along with some extra details.  Click on the lines connecting the markers for information about that leg of the route, particularly terrain.\n\n```{r}\nlibrary(leaflet)\n\ndf <- data.frame(\n  lat = c(\n    50.593608,\n    50.579862,\n    50.579590,\n    50.584867,\n    50.579583,\n    50.575179,\n    50.574136,\n    50.591865,\n    50.607821,\n    50.630026,\n    50.616893,\n    50.607954,\n    50.600832\n  ),\n  lng = c(\n    -3.9133286,\n    -3.9393139,\n    -3.9611793,\n    -3.9668620,\n    -3.9711517,\n    -3.9925575,\n    -4.0311688,\n    -4.0225697,\n    -4.0298501,\n    -3.9985604,\n    -3.9673671,\n    -3.9431620,\n    -3.9301264\n  )\n)\n\nplace_names <- c(\n  '<p><b>Postbridge Visitor Centre</b></p>Car park, pub nearby',\n  '<p><b>Powder Mills</b></p>Interesting historic industrial site',\n  '<p><b>Wistman\\'s Wood National Nature Reserve</b></p>Ancient stunted oaks',\n  '<p><b>Weir</b></p>Good place for river crossing',\n  '<p><b>Beardown Tors</b></p>Good views to east and southeast',\n  '<b>Holming Beam</b>',\n  '<p><b>Great Mis Tor</b></p>Good views to south and southwest',\n  '<b>Cocks Hill</b>',\n  '<p><b>Lynch Tor</b></p>Good views to west',\n  '<p><b>Fur Tor</b></p>Great secluded spot for camping',\n  '<p><b>Flat Tor</b></p>Pretty uninteresting',\n  '<b>Broad Down</b>',\n  '<p><b>Footbridge</b></p>Good place for river crossing'\n)\n\nleg_details <- c(\n  'Walk along forest track, then pick up Lich Way',\n  'Large tussocks near the top of the hill',\n  'Boggy',\n  'Good path',\n  'Good path',\n  'Usual moorland terrain',\n  'Usual moorland terrain',\n  'Usual moorland terrain',\n  'Very boggy on higher ground',\n  'Very boggy',\n  'Very boggy',\n  'Good path',\n  'Good path through farmland, pub soon'\n)\n\nmy_map <- df %>%\n  leaflet() %>%\n  addProviderTiles('Thunderforest.Outdoors', group = 'Topographical') %>%\n  addMarkers(popup = place_names)\n\nfor(i in 1:(nrow(df) - 1)) {\n  my_map <- addPolylines(\n    my_map,\n    lat = c(df$lat[i], df$lat[i + 1]),\n    lng = c(df$lng[i], df$lng[i + 1]),\n    popup = leg_details[i]\n  )\n}\n\nmy_map <- addPolylines(\n  my_map,\n  lat = c(df$lat[nrow(df)], df$lat[1]),\n  lng = c(df$lng[nrow(df)], df$lng[1]),\n  popup = leg_details[nrow(df)]\n)\n\nmy_map\n```\n",
+    "created" : 1509721249436.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1047779733",
+    "id" : "B26E54B8",
+    "lastKnownWriteTime" : 1509723004,
+    "last_content_update" : 1509723004839,
+    "path" : "~/m20ty.github.io/leaflet_assignment.Rmd",
+    "project_path" : "leaflet_assignment.Rmd",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
