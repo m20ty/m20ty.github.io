@@ -1,0 +1,71 @@
+---
+title: "Electricity Consumption and Temperature"
+author: "Michael Tyler"
+date: "21 November 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Synopsis
+
+- Here we investigate whether there is a correlation between electricity consumption and outdoor temperature for a single London household equipped with a 'smart' electricity meter.
+- The electricity consumption data is a sample from the Low Carbon London trial, in which ~5000 London homes were fitted with smart meters and their consumption recorded at half-hourly intervals for a period of a year, between 2012 and 2013.
+- The weather data is a random sample of 30 days during this year, obtained from the Weather Underground website.
+
+## First plot
+
+```{r echo=FALSE, message=FALSE}
+library(lubridate)
+library(jsonlite)
+library(dplyr)
+library(data.table)
+library(plotly)
+```
+
+Here is a plot of electricity consumption per half-hour interval (in kWh) against temperature (in Celsius).
+
+```{r echo=FALSE, message=FALSE}
+df <- read.csv('kWh_temp.csv')
+
+mod <- lm(kWh ~ temp, df)
+
+p <- plot_ly(df, x = ~temp, y = ~kWh, type = 'scatter')
+add_lines(p, x = ~temp, y ~ fitted(mod))
+```
+
+## Coefficients of first model
+
+The linear model shows a significant negative correlation between electricity use and temperature:
+
+```{r echo=FALSE}
+summary(mod)$coeff
+```
+
+## Second plot
+
+The values above 0.4kWh appear to have high influence on the linear model.  Here is a plot with these values removed.
+
+```{r echo=FALSE, message=FALSE}
+df2 <- df[df$kWh <= 0.4, ]
+
+mod2 <- lm(kWh ~ temp, df2)
+
+p2 <- plot_ly(df2, x = ~temp, y = ~kWh, type = 'scatter')
+add_lines(p2, x = ~temp, y ~ fitted(mod2))
+```
+
+## Coefficients of second model
+
+The new linear model still shows a significant negative correlation between electricity use and temperature:
+
+```{r echo=FALSE}
+summary(mod2)$coeff
+```
+
+## Thanks,
+
+and I hope that was interesting.
+
