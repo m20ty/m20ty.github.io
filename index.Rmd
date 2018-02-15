@@ -1,71 +1,107 @@
 ---
-title: "Electricity Consumption and Temperature"
+title: "Energy consumption and weather"
 author: "Michael Tyler"
-date: "21 November 2017"
+date: "15 February 2018"
+subtitle: "An interactive app for examining relationships between different weather variables and aggregated electricity consumption of samples of London households."
 output: ioslides_presentation
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Synopsis
-
-- Here we investigate whether there is a correlation between electricity consumption and outdoor temperature for a single London household equipped with a 'smart' electricity meter.
-- The electricity consumption data is a sample from the Low Carbon London trial, in which ~5000 London homes were fitted with smart meters and their consumption recorded at half-hourly intervals for a period of a year, between 2012 and 2013.
-- The weather data is a random sample of 30 days during this year, obtained from the Weather Underground website.
-
-## First plot
+## Inputs and outputs
 
 ```{r echo=FALSE, message=FALSE}
 library(lubridate)
-library(jsonlite)
-library(dplyr)
-library(data.table)
 library(plotly)
+
+df <- read.csv('kWh_weather.csv')
+df$interval <- ymd_hms(df$interval)
 ```
 
-Here is a plot of electricity consumption per half-hour interval (in kWh) against temperature (in Celsius).
+The inputs consist of four radio buttons and a slider.
+
+- The radio buttons are used to select a weather variable.
+- The slider is used to select a sample size between 1 and 100.
+- When the user clicks the "Create plots" button, a sample of households of the selected size is taken from the dataset, and the energy consumption is summed over these households.  A new sample is taken each time the button is clicked.
+
+The app then creates two plots.
+
+- The first is a plot of the aggregated consumption against the selected weather variable, fitted with a linear model.
+- The second plot shows the energy consumption profile for a typical winter day, aggregated over the chosen sample.
 
 ```{r echo=FALSE, message=FALSE}
-df <- read.csv('kWh_temp.csv')
-
-mod <- lm(kWh ~ temp, df)
-
-p <- plot_ly(df, x = ~temp, y = ~kWh, type = 'scatter')
-add_lines(p, x = ~temp, y ~ fitted(mod))
+df <- read.csv('kWh_weather.csv')
+df$interval <- ymd_hms(df$interval)
+tempdf <- cbind(df[, c('interval', 'temp', 'wspd'), drop = FALSE], kWh = rowSums(df[, -(1:6)]))
+df_13Feb <- df[as.character(as.Date(df$interval)) == '2013-02-13', ]
+tempdf_13Feb <- tempdf[as.character(as.Date(tempdf$interval)) == '2013-02-13', ]
 ```
 
-## Coefficients of first model
+## First plot
 
-The linear model shows a significant negative correlation between electricity use and temperature:
+The correlation becomes more consistent as the sample size increases.  Here is an example with temperature - 3 samples of size 1 produce 3 very different results, but as the sample size increases to 100 the relationship converges to the lower graph:
 
-```{r echo=FALSE}
-summary(mod)$coeff
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+p1 <- plot_ly(df, x = ~temp, y = ~N0191, type = 'scatter', mode = 'markers',
+              marker = list(size = 2), height = 150) %>%
+  layout(xaxis = list(title = ''))
+mod1 <- lm(N0191 ~ temp, df)
+p1mod <- add_lines(p1, x = ~temp, y ~ fitted(mod1))
+
+p2 <- plot_ly(df, x = ~temp, y = ~N0177, type = 'scatter', mode = 'markers',
+              marker = list(size = 2), height = 150) %>%
+  layout(xaxis = list(title = ''))
+mod2 <- lm(N0177 ~ temp, df)
+p2mod <- add_lines(p2, x = ~temp, y ~ fitted(mod2))
+
+p3 <- plot_ly(df, x = ~temp, y = ~N0240, type = 'scatter', mode = 'markers',
+              marker = list(size = 2), height = 150) %>%
+  layout(xaxis = list(title = ''))
+mod3 <- lm(N0240 ~ temp, df)
+p3mod <- add_lines(p3, x = ~temp, y ~ fitted(mod3))
+
+p <- subplot(p1mod, p2mod, p3mod, nrows = 1, shareY = TRUE) %>%
+  layout(yaxis = list(title = 'kWh', range = c(0, 0.75)))
+
+p4 <- plot_ly(tempdf, x = ~temp, y = ~kWh, type = 'scatter', mode = 'markers', height = 350) %>%
+  layout(xaxis = list(title = 'Temperature'))
+mod <- lm(kWh ~ temp, tempdf)
+p4mod <- add_lines(p4, x = ~temp, y ~ fitted(mod))
+
+subplot(p, p4mod, nrows = 2, heights = c(0.3, 0.7), titleX = TRUE, titleY = TRUE) %>%
+  layout(showlegend = FALSE)
+```
+
+## Summary table
+
+Beneath the first plot is a summary table for the linear model, along with a sentence stating whether or not the correlation is statistically significant.  Here is an example for the lower graph on the previous slide.  The linear model object is `mod`.
+
+```{r message=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+cat(if(summary(mod)$coeff[2,4] < 0.05) {
+      paste0('p = ', signif(summary(mod)$coeff[2,4], 2), ', so there', ' is a statistically significant correlation\nbetween temp', ' and kWh in this sample.')
+    } else {
+      paste0('p = ', signif(summary(mod)$coeff[2,4], 2), ', so there', ' is no correlation between temp and kWh in\nthis sample.')
+    })
 ```
 
 ## Second plot
 
-The values above 0.4kWh appear to have high influence on the linear model.  Here is a plot with these values removed.
+The consumption profile becomes more predictable as the sample size increases.  Here is an example: 3 distinct households have very different profiles, but as the sample size increases to 100 the aggregate consumption converges to the lower profile.
 
 ```{r echo=FALSE, message=FALSE}
-df2 <- df[df$kWh <= 0.4, ]
+l1 <- plot_ly(df_13Feb, x = ~interval, y = ~N0191, type = 'scatter', mode = 'lines', height = 150) %>%
+  layout(xaxis = list(title = '', showticklabels = FALSE), yaxis = list(title = 'kWh'))
+l2 <- plot_ly(df_13Feb, x = ~interval, y = ~N0177, type = 'scatter', mode = 'lines', height = 150) %>%
+  layout(xaxis = list(title = '', showticklabels = FALSE), yaxis = list(title = 'kWh'))
+l3 <- plot_ly(df_13Feb, x = ~interval, y = ~N0240, type = 'scatter', mode = 'lines', height = 150) %>%
+  layout(xaxis = list(title = '', showticklabels = FALSE), yaxis = list(title = 'kWh'))
 
-mod2 <- lm(kWh ~ temp, df2)
+l <- subplot(l1, l2, l3, nrows = 1, shareX = TRUE, shareY = TRUE)
 
-p2 <- plot_ly(df2, x = ~temp, y = ~kWh, type = 'scatter')
-add_lines(p2, x = ~temp, y ~ fitted(mod2))
+l4 <- plot_ly(tempdf_13Feb, x = ~interval, y = ~kWh, type = 'scatter', mode = 'lines', height = 350)
+
+subplot(l, l4, nrows = 2, heights = c(0.3, 0.7), titleX = TRUE, titleY = TRUE) %>%
+  layout(showlegend = FALSE)
 ```
-
-## Coefficients of second model
-
-The new linear model still shows a significant negative correlation between electricity use and temperature:
-
-```{r echo=FALSE}
-summary(mod2)$coeff
-```
-
-## Thanks,
-
-and I hope that was interesting.
-
